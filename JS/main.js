@@ -19,9 +19,18 @@ var game = new Phaser.Game(config);
 var player;
 var recoil = 300;
 var bulletSpeed = 1000;
+var enemySpeed = 100;
 var bullets;
 var enemies;
 var playergroup;
+
+var score = 0;
+var health = 100;
+
+var scoretext;
+var healthtext;
+
+var canPlay = true;
 
 function preload ()
 {
@@ -39,9 +48,14 @@ function create ()
     playergroup = this.physics.add.group();
 
     player = playergroup.create(400, 300, 'box32');
-    player.setBounce(0.5, 0.5);
-    player.setCollideWorldBounds(true); 
+    //player.setBounce(0.5, 0.5);
+    //player.setCollideWorldBounds(true); 
 
+    scoretext = this.add.text(16, 16, 'SCORE: 0', { fontSize: '32px', fill: '#FFF' });
+    healthtext = this.add.text(16, 16, 'HEALTH: 100', { fontSize: '32px', fill: '#FFF'});
+
+    scoretext.x = 200;
+    healthtext.x = 430;
 }
 
 function shoot (context) {
@@ -75,21 +89,10 @@ function spawnEnemy (context) {
 }
 
 function bulletEnemyCollisionCallback (obj1, obj2, context) {
+    score += 10;
+    scoretext.setText('SCORE: ' + score);
+
     obj1.destroy();
-
-    var particles = context.add.particles('red');
-
-    var emitter = particles.createEmitter({
-        speed: 100,
-        explode: true,
-        lifespan: 600,
-        scale: { start: 0.25, end: 0 },
-        blendMode: 'ADD'
-    });
-
-    emitter.explode();
-    particles.destroy();
-
     obj2.destroy();
 }
 
@@ -97,11 +100,38 @@ function bulletEnemyCollisionCallback (obj1, obj2, context) {
 function playerEnemyCollisionCallback (obj1, obj2, context) {
     //obj1.destroy();
     obj2.destroy();
+
+    health -= 10;
+    healthtext.setText('HEALTH: ' + health);
+
+    if (health <= 0) {
+        let text = context.add.text(32, 32, 'GAME OVER', { fontSize: '32px', fill: '#FFF' });
+
+        text.x = 400 - text.width / 2;
+        text.y = 300 + text.height / 2;    
+        
+        canPlay = 0;
+
+        for (enemy of enemies.children.entries) {
+            enemy.destroy();
+        }
+
+        for (bullet of bullets.children.entries) {
+            bullet.destroy();
+        }  
+        
+        player.destroy();
+
+        window.setTimeout(context.scene.restart, 2000);
+    }
+
 }
 
 function update () {
 
-    console.log(game.physics);
+    if (!canPlay) {
+        return;
+    }
 
     if (game.input.activePointer.justDown) {
         shoot(this);
@@ -111,6 +141,36 @@ function update () {
     player.body.velocity.x *= 0.99;
     player.body.velocity.y *= 0.99;
 
+    this.physics.collide(enemies,enemies);
     this.physics.collide(bullets,enemies,(obj1,obj2,context=this) => {bulletEnemyCollisionCallback(obj1,obj2,context)});
     this.physics.collide(playergroup,enemies,(obj1,obj2,context=this) => {playerEnemyCollisionCallback(obj1,obj2,context)});
+
+    for (enemy of enemies.children.entries) {
+        let velx = player.x - enemy.x;
+        let vely = player.y - enemy.y;
+    
+        let length = Math.sqrt(Math.pow(velx,2) + Math.pow(vely,2))
+    
+        velx /= length;
+        vely /= length;
+    
+        enemy.setVelocity(velx * enemySpeed,vely * enemySpeed);
+    }
+
+    if (player.x > 800) {
+        player.x = 0
+        //player.body.velocity.y *= -1
+    } else if (player.x < 0) {
+        player.x = 800
+        //player.body.velocity.y *= -1
+    }
+
+    
+    if (player.y > 600) {
+        player.y = 0
+        //player.body.velocity.x *= -1
+    } else if (player.y < 0) {
+        player.y = 600
+        //player.body.velocity.x *= -1
+    }
 }
