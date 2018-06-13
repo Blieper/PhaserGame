@@ -36,18 +36,24 @@ function preload ()
 {
     this.load.setBaseURL('http://labs.phaser.io');
 
-    this.load.image('box32', 'assets/sprites/32x32.png');
+    this.load.image('ship', 'assets/games/asteroids/ship.png');
+    this.load.image('rock', 'assets/games/asteroids/asteroid1.png');
     this.load.image('logo', 'assets/sprites/phaser3-logo.png');
-    this.load.image('red', 'assets/particles/red.png');
+    this.load.image('background', 'assets/skies/starfield.png');
+    this.load.image('bullet', 'assets/games/asteroids/bullets.png');
 }
 
 function create ()
 {
+    let bg = this.add.image(400, 300, 'background');
+
+    bg.setDisplaySize(800,600);
+
     bullets = this.physics.add.group();
     enemies = this.physics.add.group();
     playergroup = this.physics.add.group();
 
-    player = playergroup.create(400, 300, 'box32');
+    player = playergroup.create(400, 300, 'ship');
     //player.setBounce(0.5, 0.5);
     //player.setCollideWorldBounds(true); 
 
@@ -70,7 +76,7 @@ function shoot (context) {
     player.body.velocity.x -= velx * recoil;
     player.body.velocity.y -= vely * recoil;
 
-    let bullet = bullets.create(player.x, player.y, 'red');
+    let bullet = bullets.create(player.x, player.y, 'bullet');
 
     bullet.setVelocity(velx * bulletSpeed,vely * bulletSpeed);
   
@@ -85,7 +91,7 @@ function spawnEnemy (context) {
         length = Math.sqrt(Math.pow(test.x - player.x,2) + Math.pow(test.y - player.y,2));
     }
 
-    let enemy = enemies.create(test.x, test.y, 'box32');
+    let enemy = enemies.create(test.x, test.y, 'rock');
 }
 
 function bulletEnemyCollisionCallback (obj1, obj2, context) {
@@ -127,6 +133,20 @@ function playerEnemyCollisionCallback (obj1, obj2, context) {
 
 }
 
+function angleToPointer (position) {
+    let diffX = position.x - game.input.activePointer.x;
+    let diffY = position.y - game.input.activePointer.y;
+
+    let Length = Math.sqrt(Math.pow(diffX,2) + Math.pow(diffY,2));
+    let normX = diffX / Length;
+    let normY = diffY / Length;
+
+    let angle = Math.atan2(normX,normY) * -180 / Math.PI - 90;
+
+    
+    return angle;
+}
+
 function update () {
 
     if (!canPlay) {
@@ -140,6 +160,8 @@ function update () {
 
     player.body.velocity.x *= 0.99;
     player.body.velocity.y *= 0.99;
+
+    player.body.rotation = angleToPointer(player.body.position)
 
     this.physics.collide(enemies,enemies);
     this.physics.collide(bullets,enemies,(obj1,obj2,context=this) => {bulletEnemyCollisionCallback(obj1,obj2,context)});
