@@ -12,6 +12,9 @@ var config = {
         preload: preload,
         create: create,
         update: update
+    },
+    audio: {
+        disableWebAudio: true
     }
 };
 
@@ -41,6 +44,11 @@ function preload ()
     this.load.image('logo', 'assets/sprites/phaser3-logo.png');
     this.load.image('background', 'assets/skies/starfield.png');
     this.load.image('bullet', 'assets/games/asteroids/bullets.png');
+
+    this.load.audio('shoot', 'assets/audio/SoundEffects/blaster.mp3');
+    this.load.audio('explode', 'assets/audio/SoundEffects/explode1.wav');
+    this.load.audio('hit', 'assets/audio/SoundEffects/lazer.wav');
+    this.load.audio('music', 'assets/audio/tommy_in_goa.mp3');
 }
 
 function create ()
@@ -54,14 +62,15 @@ function create ()
     playergroup = this.physics.add.group();
 
     player = playergroup.create(400, 300, 'ship');
-    //player.setBounce(0.5, 0.5);
-    //player.setCollideWorldBounds(true); 
 
     scoretext = this.add.text(16, 16, 'SCORE: 0', { fontSize: '32px', fill: '#FFF' });
     healthtext = this.add.text(16, 16, 'HEALTH: 100', { fontSize: '32px', fill: '#FFF'});
 
     scoretext.x = 200;
     healthtext.x = 430;
+
+    let music = this.sound.add('music', { loop: true });
+    music.play();
 }
 
 function shoot (context) {
@@ -79,6 +88,8 @@ function shoot (context) {
     let bullet = bullets.create(player.x, player.y, 'bullet');
 
     bullet.setVelocity(velx * bulletSpeed,vely * bulletSpeed);
+
+    context.sound.add('shoot').play();
   
 }
 
@@ -100,6 +111,8 @@ function bulletEnemyCollisionCallback (obj1, obj2, context) {
 
     obj1.destroy();
     obj2.destroy();
+
+    context.sound.add('explode').play();
 }
 
 
@@ -109,6 +122,8 @@ function playerEnemyCollisionCallback (obj1, obj2, context) {
 
     health -= 10;
     healthtext.setText('HEALTH: ' + health);
+
+    context.sound.add('hit').play();
 
     if (health <= 0) {
         let text = context.add.text(32, 32, 'GAME OVER', { fontSize: '32px', fill: '#FFF' });
@@ -128,7 +143,7 @@ function playerEnemyCollisionCallback (obj1, obj2, context) {
         
         player.destroy();
 
-        window.setTimeout(context.scene.restart, 2000);
+        setTimeout("location.reload(true);",3000);
     }
 
 }
